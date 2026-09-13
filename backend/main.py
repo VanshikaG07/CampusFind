@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import bcrypt
@@ -136,4 +136,86 @@ def login(user: LoginRequest):
             "email": user.email,
             "role": db_user[3]
         }
+    }
+
+@app.get("/resources")
+def get_resources():
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, user_id, title, description, category,
+               type, price, `condition`, status, created_at
+        FROM resources
+        ORDER BY created_at DESC
+        """
+    )
+
+    resources = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    return {
+        "resources": [
+            {
+                "id": row[0],
+                "user_id": row[1],
+                "title": row[2],
+                "description": row[3],
+                "category": row[4],
+                "type": row[5],
+                "price": float(row[6]) if row[6] is not None else None,
+                "condition": row[7],
+                "status": row[8],
+                "created_at": row[9]
+            }
+            for row in resources
+        ]
+    }
+
+@app.get("/resources/search")
+def search_resources(search: str = Query(..., min_length=1)):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    search_pattern = f"%{search}%"
+
+    cursor.execute(
+        """
+        SELECT id, user_id, title, description, category,
+               type, price, `condition`, status, created_at
+        FROM resources
+        WHERE title LIKE %s
+           OR description LIKE %s
+           OR category LIKE %s
+        ORDER BY created_at DESC
+        """,
+        (search_pattern, search_pattern, search_pattern)
+    )
+
+    resources = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    return {
+        "resources": [
+            {
+                "id": row[0],
+                "user_id": row[1],
+                "title": row[2],
+                "description": row[3],
+                "category": row[4],
+                "type": row[5],
+                "price": float(row[6]) if row[6] is not None else None,
+                "condition": row[7],
+                "status": row[8],
+                "created_at": row[9]
+            }
+            for row in resources
+        ]
     }
