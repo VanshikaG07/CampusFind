@@ -24,6 +24,15 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class ResourceCreateRequest(BaseModel):
+    user_id: int
+    title: str
+    description: str
+    category: str
+    type: str
+    price: float | None = None
+    condition: str
+
 @app.get("/")
 def home():
     return {"message": "CampusFind Backend Running"}
@@ -254,4 +263,55 @@ def get_resource(resource_id: int):
         "condition": resource[7],
         "status": resource[8],
         "created_at": resource[9]
+    }
+
+@app.post("/resources")
+def create_resource(resource: ResourceCreateRequest):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    # Check whether the user exists
+    cursor.execute(
+        "SELECT id FROM users WHERE id = %s",
+        (resource.user_id,)
+    )
+
+    if cursor.fetchone() is None:
+        cursor.close()
+        connection.close()
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    # Insert the new resource
+    cursor.execute(
+        """
+        INSERT INTO resources
+        (user_id, title, description, category, type, price, `condition`, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        (
+            resource.user_id,
+            resource.title,
+            resource.description,
+            resource.category,
+            resource.type,
+            resource.price,
+            resource.condition,
+            "AVAILABLE"
+        )
+    )
+
+    connection.commit()
+
+    resource_id = cursor.lastrowid
+
+    cursor.close()
+    connection.close()
+
+    return {
+        "message": "Resource created successfully",
+        "resource_id": resource_id
     }
