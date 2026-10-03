@@ -219,3 +219,39 @@ def search_resources(search: str = Query(..., min_length=1)):
             for row in resources
         ]
     }
+
+@app.get("/resources/{resource_id}")
+def get_resource(resource_id: int):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, user_id, title, description, category,
+               type, price, `condition`, status, created_at
+        FROM resources
+        WHERE id = %s
+        """,
+        (resource_id,)
+    )
+
+    resource = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if resource is None:
+        raise HTTPException(status_code=404, detail="Resource not found")
+
+    return {
+        "id": resource[0],
+        "user_id": resource[1],
+        "title": resource[2],
+        "description": resource[3],
+        "category": resource[4],
+        "type": resource[5],
+        "price": float(resource[6]) if resource[6] is not None else None,
+        "condition": resource[7],
+        "status": resource[8],
+        "created_at": resource[9]
+    }
