@@ -1,8 +1,27 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Literal
 import bcrypt
 from database import get_connection
+import os
+import jwt
+from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
+from fastapi import Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+load_dotenv()
+
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+
+if not JWT_SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY is missing from .env")
+
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+security = HTTPBearer()
 
 app = FastAPI()
 
@@ -13,6 +32,45 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def create_access_token(user_id: int):
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+
+    payload = {
+        "sub": str(user_id),
+        "exp": expire
+    }
+
+    return jwt.encode(
+        payload,
+        JWT_SECRET_KEY,
+        algorithm=JWT_ALGORITHM
+    )
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
+
+    try:
+        payload = jwt.decode(
+            token,
+            JWT_SECRET_KEY,
+            algorithms=[JWT_ALGORITHM]
+        )
+
+        user_id = int(payload["sub"])
+        return user_id
+
+    except (jwt.InvalidTokenError, KeyError, TypeError, ValueError):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
 
 class RegisterRequest(BaseModel):
     full_name: str
@@ -25,13 +83,21 @@ class LoginRequest(BaseModel):
     password: str
 
 class ResourceCreateRequest(BaseModel):
-    user_id: int
     title: str
     description: str
     category: str
-    type: str
-    price: float | None = None
-    condition: str
+    type: Literal["SELL", "RENT", "BORROW"]
+    price: float | None = Field(default=None, ge=0)
+    condition: Literal["NEW", "GOOD", "USED"]
+
+class ResourceUpdateRequest(BaseModel):
+    title: str
+    description: str
+    category: str
+    type: Literal["SELL", "RENT", "BORROW"]
+    price: float | None = Field(default=None, ge=0)
+    condition: Literal["NEW", "GOOD", "USED"]
+    status: Literal["AVAILABLE", "SOLD", "RENTED", "BORROWED"]
 
 class RequestCreateRequest(BaseModel):
     user_id: int
@@ -45,9 +111,11 @@ def home():
 
 
 @app.get("/hello")
-def hello():
-    return {"message": "Hello from CampusFind"}
-
+def hello(current_user: int = Depends(get_current_user)):
+    return {
+        "message": "Hello from CampusFind",
+        "user_id": current_user
+    }
 
 @app.post("/register")
 def register(user: RegisterRequest):
@@ -143,13 +211,17 @@ def login(user: LoginRequest):
     cursor.close()
     connection.close()
 
+    access_token = create_access_token(db_user[0])
+    
     return {
-        "message": "Login successful",
-        "user": {
-            "id": db_user[0],
-            "full_name": db_user[1],
-            "email": user.email,
-            "role": db_user[3]
+    "message": "Login successful",
+    "access_token": access_token,
+    "token_type": "bearer",
+    "user": {
+        "id": db_user[0],
+        "full_name": db_user[1],
+        "email": user.email,
+        "role": db_user[3]
         }
     }
 
@@ -271,16 +343,19 @@ def get_resource(resource_id: int):
         "created_at": resource[9]
     }
 
-@app.post("/resources")
-def create_resource(resource: ResourceCreateRequest):
 
+@app.post("/resources")
+def create_resource(
+    resource: ResourceCreateRequest,
+    current_user: int = Depends(get_current_user)
+):
     connection = get_connection()
     cursor = connection.cursor()
 
-    # Check whether the user exists
+    # Verify that the authenticated user exists
     cursor.execute(
         "SELECT id FROM users WHERE id = %s",
-        (resource.user_id,)
+        (current_user,)
     )
 
     if cursor.fetchone() is None:
@@ -291,7 +366,7 @@ def create_resource(resource: ResourceCreateRequest):
             detail="User not found"
         )
 
-    # Insert the new resource
+    # Insert the resource using the authenticated user's ID
     cursor.execute(
         """
         INSERT INTO resources
@@ -299,7 +374,7 @@ def create_resource(resource: ResourceCreateRequest):
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
-            resource.user_id,
+            current_user,
             resource.title,
             resource.description,
             resource.category,
@@ -438,4 +513,188 @@ def get_request(request_id: int):
         "category": request[4],
         "status": request[5],
         "created_at": request[6]
+    }
+
+@app.put("/resources/{resource_id}")
+def update_resource(
+    resource_id: int,
+    resource: ResourceUpdateRequest,
+    current_user: int = Depends(get_current_user)
+):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    # Verify that the authenticated user owns this resource
+    cursor.execute(
+        "SELECT id FROM resources WHERE id = %s AND user_id = %s",
+        (resource_id, current_user)
+    )
+
+    if cursor.fetchone() is None:
+        cursor.close()
+        connection.close()
+        raise HTTPException(
+            status_code=404,
+            detail="Resource not found or you do not own this resource"
+        )
+
+    # Update only the resource owned by the authenticated user
+    cursor.execute(
+        """
+        UPDATE resources
+        SET title = %s,
+            description = %s,
+            category = %s,
+            type = %s,
+            price = %s,
+            `condition` = %s,
+            status = %s
+        WHERE id = %s AND user_id = %s
+        """,
+        (
+            resource.title,
+            resource.description,
+            resource.category,
+            resource.type,
+            resource.price,
+            resource.condition,
+            resource.status,
+            resource_id,
+            current_user
+        )
+    )
+
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+    return {
+        "message": "Resource updated successfully",
+        "resource_id": resource_id
+    }
+
+@app.delete("/resources/{resource_id}")
+def delete_resource(
+    resource_id: int,
+    current_user: int = Depends(get_current_user)
+):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    # Verify that the authenticated user owns this resource
+    cursor.execute(
+        "SELECT id FROM resources WHERE id = %s AND user_id = %s",
+        (resource_id, current_user)
+    )
+
+    if cursor.fetchone() is None:
+        cursor.close()
+        connection.close()
+        raise HTTPException(
+            status_code=404,
+            detail="Resource not found or you do not own this resource"
+        )
+
+    # Delete only the resource owned by the authenticated user
+    cursor.execute(
+        "DELETE FROM resources WHERE id = %s AND user_id = %s",
+        (resource_id, current_user)
+    )
+
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+    return {
+        "message": "Resource deleted successfully",
+        "resource_id": resource_id
+    }
+
+@app.get("/users/{user_id}")
+def get_user_profile(user_id: int):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, full_name, email, phone, is_verified, role
+        FROM users
+        WHERE id = %s
+        """,
+        (user_id,)
+    )
+
+    user = cursor.fetchone()
+
+    cursor.close()
+    connection.close()
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    return {
+        "id": user[0],
+        "full_name": user[1],
+        "email": user[2],
+        "phone": user[3],
+        "is_verified": bool(user[4]),
+        "role": user[5]
+    }
+
+@app.get("/users/{user_id}/resources")
+def get_user_resources(user_id: int):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    # Check whether the user exists
+    cursor.execute(
+        "SELECT id FROM users WHERE id = %s",
+        (user_id,)
+    )
+
+    if cursor.fetchone() is None:
+        cursor.close()
+        connection.close()
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    # Fetch resources belonging to this user
+    cursor.execute(
+        """
+        SELECT id, user_id, title, description, category,
+               type, price, `condition`, status, created_at
+        FROM resources
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+        """,
+        (user_id,)
+    )
+
+    resources = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    return {
+        "user_id": user_id,
+        "resources": [
+            {
+                "id": row[0],
+                "user_id": row[1],
+                "title": row[2],
+                "description": row[3],
+                "category": row[4],
+                "type": row[5],
+                "price": float(row[6]) if row[6] is not None else None,
+                "condition": row[7],
+                "status": row[8],
+                "created_at": row[9]
+            }
+            for row in resources
+        ]
     }
