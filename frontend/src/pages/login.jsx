@@ -1,45 +1,31 @@
 import { useState } from "react";
 import "./login.css";
+import { loginUser } from "../api/auth";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setMessage("");
+const handleLogin = async (e) => {
+  e.preventDefault();
+  setMessage("");
 
-    try {
-      const response = await fetch("http://127.0.0.1:8000/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-        }),
-      });
+  try {
+    const data = await loginUser(email, password);
 
-      const data = await response.json();
+    setMessage("Login successful!");
 
-      if (!response.ok) {
-        setMessage(data.detail || "Login failed");
-        return;
-      }
+    console.log("Logged in user:", data.user);
 
-      setMessage("Login successful!");
+    localStorage.setItem("access_token", data.access_token);
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-      console.log("Logged in user:", data.user);
-
-      // We can redirect to the home page later
-      // window.location.href = "/";
-    } catch (error) {
-      console.error(error);
-      setMessage("Cannot connect to the backend.");
-    }
-  };
+  } catch (error) {
+    console.error(error);
+    setMessage(error.message);
+  }
+};
 
   return (
     <div className="auth-page">
