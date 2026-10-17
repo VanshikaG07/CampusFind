@@ -21,6 +21,8 @@ const handleLogin = async (e) => {
     localStorage.setItem("access_token", data.access_token);
     localStorage.setItem("user", JSON.stringify(data.user));
 
+    window.location.href = "/";
+
   } catch (error) {
     console.error(error);
     setMessage(error.message);

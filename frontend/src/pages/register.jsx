@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./Register.css";
+import { registerUser } from "../api/auth";
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -20,6 +21,7 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage("");
 
     if (formData.password !== formData.confirmPassword) {
       setMessage("Passwords do not match.");
@@ -27,29 +29,22 @@ function Register() {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          full_name: formData.full_name,
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      const data = await registerUser(
+        formData.full_name,
+        formData.email,
+        formData.password
+      );
 
-      const data = await response.json();
+      setMessage("Account created successfully!");
 
-      if (response.ok) {
-        setMessage("Account created successfully!");
-      } else {
-        setMessage(data.detail || "Registration failed.");
-      }
+      console.log("Registered user:", data.user);
+
+      window.location.href = "/login";
     } catch (error) {
-      setMessage("Cannot connect to the backend.");
+      console.error(error);
+      setMessage(error.message);
     }
-  };
+  }; 
 
   return (
     <div className="auth-page">
