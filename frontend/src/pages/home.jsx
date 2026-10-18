@@ -3,6 +3,7 @@ import ResourceCard from "../components/ResourceCard";
 
 const resources = [
   {
+    id: 1,
     title: "Data Structures Book",
     price: 300,
     type: "For Sale",
@@ -11,6 +12,7 @@ const resources = [
     image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f"
   },
   {
+    id: 2,
     title: "Scientific Calculator",
     price: 30,
     type: "For Rent",
@@ -19,6 +21,7 @@ const resources = [
     image: "https://images.unsplash.com/photo-1587145820266-a5951ee6f620"
   },
   {
+    id: 3,
     title: "Cycle",
     price: 80,
     type: "For Rent",
@@ -170,7 +173,7 @@ function Home() {
         <div className="resource-grid">
             {resources.map((resource) => (
                 <ResourceCard
-                    key={resource.title}
+                    key={resource.id}
                     {...resource}
                 />
             ))}

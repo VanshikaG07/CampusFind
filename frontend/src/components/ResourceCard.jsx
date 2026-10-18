@@ -1,6 +1,7 @@
 import "./ResourceCard.css";
 
 function ResourceCard({
+  id,
   title,
   price,
   type,
@@ -12,11 +13,17 @@ function ResourceCard({
     <div className="resource-card">
 
       <div className="resource-image-container">
-        <img
-          src={image}
-          alt={title}
-          className="resource-image"
-        />
+        {image ? (
+          <img
+            src={image}
+            alt={title}
+            className="resource-image"
+          />
+        ) : (
+          <div className="resource-image-placeholder">
+            No image
+          </div>
+        )}
       </div>
 
       <div className="resource-content">
@@ -39,13 +46,16 @@ function ResourceCard({
             </p>
 
             <p className="resource-location">
-              📍 {location}
+              📍 {location || "Location unavailable"}
             </p>
           </div>
 
-          <button className="resource-button">
+          <a
+            href={`/resources/${id}`}
+            className="resource-button"
+          >
             View
-          </button>
+          </a>
 
         </div>
 
