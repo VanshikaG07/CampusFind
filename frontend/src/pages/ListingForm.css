@@ -1,0 +1,146 @@
+.form-page-container {
+  padding-top: 36px;
+  padding-bottom: 72px;
+  max-width: 680px;
+}
+
+.form-card {
+  background-color: #ffffff;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  padding: 36px;
+}
+
+.form-back {
+  margin-bottom: 20px;
+}
+
+.form-header {
+  margin-bottom: 28px;
+}
+
+.form-header h1 {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--color-text-navy);
+}
+
+.form-desc {
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.required-star {
+  color: var(--color-urgent);
+  margin-left: 2px;
+}
+
+.form-help-text {
+  font-size: 0.78rem;
+  color: var(--color-text-light);
+  margin-top: 5px;
+  display: block;
+}
+
+/* Image preview container */
+.image-preview-strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+  padding: 12px;
+  background-color: var(--color-bg-page);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.image-preview-thumb {
+  width: 72px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: #ffffff;
+}
+
+.image-preview-label {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+/* Urgency box */
+.form-urgency-box {
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  transition: all var(--transition-fast);
+  margin-bottom: 20px;
+  background-color: var(--color-bg-page);
+  border: 1.5px solid var(--color-border);
+}
+
+.form-urgency-box.active {
+  background-color: var(--color-urgent-bg);
+  border-color: var(--color-urgent-border);
+}
+
+.urgency-toggle-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.urgency-toggle-label input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--color-urgent);
+}
+
+.urgency-title-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-text-navy);
+}
+
+.urgency-title-text.active {
+  color: var(--color-urgent-text);
+}
+
+.urgency-desc-text {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: block;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.form-submit-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 600px) {
+  .form-card {
+    padding: 24px 18px;
+  }
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

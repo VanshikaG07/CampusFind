@@ -1,0 +1,43 @@
+.empty-state-card {
+  padding: 56px 24px;
+  text-align: center;
+  background-color: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-border);
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.empty-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin-bottom: 8px;
+}
+
+.empty-desc {
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+  max-width: 420px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.empty-btn {
+  padding: 8px 20px;
+}

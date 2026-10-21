@@ -1,187 +1,201 @@
-import "./Home.css";
-import ResourceCard from "../components/ResourceCard";
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useResources } from '../context/ResourceContext';
+import { useRequests } from '../context/RequestContext';
+import { useAuth } from '../context/AuthContext';
+import {
+  SearchIcon,
+  PlusIcon,
+  ArrowRightIcon,
+  AlertCircleIcon,
+  CategoryIcons,
+} from '../components/common/Icons';
+import ResourceCard from '../components/resources/ResourceCard';
+import RequestCard from '../components/requests/RequestCard';
+import { CATEGORIES } from '../data/resources';
+import './Home.css';
 
-const resources = [
-  {
-    id: 1,
-    title: "Data Structures Book",
-    price: 300,
-    type: "For Sale",
-    condition: "Good condition",
-    location: "CSE Department",
-    image: "https://images.unsplash.com/photo-1544947950-fa07a98d237f"
-  },
-  {
-    id: 2,
-    title: "Scientific Calculator",
-    price: 30,
-    type: "For Rent",
-    condition: "Like new",
-    location: "Hostel 2",
-    image: "https://images.unsplash.com/photo-1587145820266-a5951ee6f620"
-  },
-  {
-    id: 3,
-    title: "Cycle",
-    price: 80,
-    type: "For Rent",
-    condition: "Good condition",
-    location: "Hostel 1",
-    image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39"
-  }
-];
+export default function Home() {
+  const { resources } = useResources();
+  const { requests } = useRequests();
+  const { isAuthenticated } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
-function Home() {
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    navigate(searchQuery.trim() ? `/browse?search=${encodeURIComponent(searchQuery.trim())}` : '/browse');
+  };
+
+  const urgentRequests = requests.filter((r) => r.urgency && r.status !== 'fulfilled').slice(0, 3);
+  const recentResources = resources.slice(0, 8);
+
   return (
-    <div className="home">
+    <div className="home-page fade-in">
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
-          <p className="welcome-text">Welcome to CampusFind 👋</p>
-
-          <h1>
-            Find what you need,
-            <span> right on campus.</span>
-          </h1>
-
-          <p className="hero-description">
-            Buy, sell, rent, or request resources from students around you.
-          </p>
-
-          <div className="search-box">
-            <span>⌕</span>
-            <input
-              type="text"
-              placeholder="Search books, cycles, gadgets..."
-            />
-            <button>Search</button>
-          </div>
-
-          <div className="quick-actions">
-            <button>Buy</button>
-            <button>Rent</button>
-            <button>Post a Demand</button>
-          </div>
-        </div>
-      </section>
-
-
-      {/* Urgent Requests */}
-      <section className="section">
-        <div className="section-header">
-          <div>
-            <p className="section-label urgent-label">URGENT</p>
-            <h2>Students need these now</h2>
-          </div>
-
-          <a href="/urgent">View all →</a>
-        </div>
-
-        <div className="urgent-grid">
-
-          <div className="urgent-card">
-            <div>
-              <span className="urgent-badge">Urgent</span>
-              <h3>Practical Notebook</h3>
-              <p>Needed within 3 hours</p>
+      {/* ═══ HERO ═══ */}
+      <section className="hero-section">
+        <div className="container hero-container">
+          <div className="hero-content">
+            <div className="hero-badge">
+              <span className="badge-pulse" />
+              <span>Verified DSEU Student Marketplace</span>
             </div>
 
-            <button>Can Help</button>
-          </div>
+            <h1 className="hero-title">
+              Buy, sell, and rent resources <span className="hero-title-accent">across campus.</span>
+            </h1>
 
-          <div className="urgent-card">
-            <div>
-              <span className="urgent-badge">Urgent</span>
-              <h3>Scientific Calculator</h3>
-              <p>Needed by tomorrow</p>
-            </div>
+            <p className="hero-subtitle">
+              The direct peer-to-peer exchange for textbooks, lab kits, cycles, and hostel essentials — exclusively for DSEU students.
+            </p>
 
-            <button>Can Help</button>
-          </div>
-
-          <div className="urgent-card">
-            <div>
-              <span className="urgent-badge">Urgent</span>
-              <h3>File Cover</h3>
-              <p>Needed today</p>
-            </div>
-
-            <button>Can Help</button>
-          </div>
-
-        </div>
-      </section>
-
-
-      {/* Categories */}
-      <section className="section">
-        <div className="section-header">
-          <div>
-            <p className="section-label">EXPLORE</p>
-            <h2>Popular Categories</h2>
-          </div>
-        </div>
-
-        <div className="category-grid">
-
-          <div className="category-card">
-            <span>📚</span>
-            <p>Books</p>
-          </div>
-
-          <div className="category-card">
-            <span>🚲</span>
-            <p>Cycles</p>
-          </div>
-
-          <div className="category-card">
-            <span>💻</span>
-            <p>Electronics</p>
-          </div>
-
-          <div className="category-card">
-            <span>📐</span>
-            <p>Stationery</p>
-          </div>
-
-          <div className="category-card">
-            <span>🏏</span>
-            <p>Sports</p>
-          </div>
-
-          <div className="category-card">
-            <span>🛏️</span>
-            <p>Hostel Items</p>
-          </div>
-
-        </div>
-      </section>
-
-
-      {/* Recently Listed */}
-      <section className="section">
-        <div className="section-header">
-          <div>
-            <p className="section-label">MARKETPLACE</p>
-            <h2>Recently Listed</h2>
-          </div>
-
-          <a href="/browse">Browse all →</a>
-        </div>
-
-        <div className="resource-grid">
-            {resources.map((resource) => (
-                <ResourceCard
-                    key={resource.id}
-                    {...resource}
+            {/* Search bar */}
+            <form className="hero-search-form" onSubmit={handleSearchSubmit}>
+              <div className="search-input-wrapper">
+                <SearchIcon size={18} className="search-icon-svg" />
+                <input
+                  type="text"
+                  placeholder="Search textbooks, calculators, cycles, drafters..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="hero-search-input"
                 />
-            ))}
+              </div>
+              <button type="submit" className="btn btn-primary hero-search-btn">
+                Search
+              </button>
+            </form>
+
+            {/* Quick Category Tags */}
+            <div className="hero-quick-tags">
+              <span className="quick-tags-label">Popular:</span>
+              {['Books', 'Cycles', 'Electronics', 'Stationery', 'Hostel Items'].map((tag) => (
+                <Link
+                  key={tag}
+                  to={`/browse?category=${encodeURIComponent(tag)}`}
+                  className="quick-tag-pill"
+                >
+                  {tag}
+                </Link>
+              ))}
+            </div>
+
+            {/* CTA row */}
+            <div className="hero-ctas">
+              <Link to="/browse" className="btn btn-primary btn-lg">
+                Browse Marketplace
+              </Link>
+              <Link to="/rent" className="btn btn-secondary btn-lg">
+                Rent Gear
+              </Link>
+              <Link
+                to={isAuthenticated ? '/requests/create' : '/login'}
+                state={!isAuthenticated ? { from: '/requests/create', message: 'Please log in to post a resource request.' } : undefined}
+                className="btn btn-secondary btn-lg"
+              >
+                <PlusIcon size={16} />
+                Post a Request
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
+      {/* ═══ URGENT REQUESTS ═══ */}
+      {urgentRequests.length > 0 && (
+        <section className="home-section urgent-section">
+          <div className="container">
+            <div className="section-header">
+              <div>
+                <div className="section-tag urgent-tag">
+                  <AlertCircleIcon size={13} />
+                  <span>Immediate Needs</span>
+                </div>
+                <h2 className="title-md">Urgent Requests</h2>
+              </div>
+              <Link to="/urgent" className="view-all-link">
+                View all
+                <ArrowRightIcon size={14} />
+              </Link>
+            </div>
+            <div className="urgent-requests-grid stagger-children">
+              {urgentRequests.map((req) => (
+                <RequestCard key={req.id} request={req} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══ CATEGORIES ═══ */}
+      <section className="home-section categories-section">
+        <div className="container">
+          <div className="section-header center">
+            <div className="section-tag">Browse Categories</div>
+            <h2 className="title-md">Explore Campus Categories</h2>
+          </div>
+          <div className="category-cards-grid stagger-children">
+            {CATEGORIES.map((cat) => {
+              const IconComponent = CategoryIcons[cat] || SearchIcon;
+              const count = resources.filter((r) => r.category === cat).length;
+              return (
+                <Link key={cat} to={`/browse?category=${encodeURIComponent(cat)}`} className="category-card">
+                  <div className="category-icon-bubble">
+                    <IconComponent size={22} />
+                  </div>
+                  <h3 className="category-card-name">{cat}</h3>
+                  <span className="category-count">{count} items</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ RECENT LISTINGS ═══ */}
+      <section className="home-section recent-section">
+        <div className="container">
+          <div className="section-header">
+            <div>
+              <div className="section-tag">Recently Added</div>
+              <h2 className="title-md">Latest Campus Listings</h2>
+            </div>
+            <Link to="/browse" className="view-all-link">
+              All listings ({resources.length})
+              <ArrowRightIcon size={14} />
+            </Link>
+          </div>
+          <div className="grid-cards stagger-children">
+            {recentResources.map((res) => (
+              <ResourceCard key={res.id} resource={res} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ HOW IT WORKS ═══ */}
+      <section className="home-section how-it-works-section">
+        <div className="container">
+          <div className="section-header center">
+            <h2 className="title-md">How CampusFind Works</h2>
+            <p className="section-desc">Zero commission. Safe peer handovers inside DSEU.</p>
+          </div>
+          <div className="steps-grid stagger-children">
+            {[
+              { n: '1', title: 'List or Request', desc: 'Put up items you no longer need, or post an urgent request for study materials.' },
+              { n: '2', title: 'Connect Directly', desc: 'Chat directly with fellow DSEU students to agree on price and condition.' },
+              { n: '3', title: 'Meet on Campus', desc: 'Handover at the library, canteen, or hostel gate. Inspect and pay in person.' },
+            ].map((s) => (
+              <div key={s.n} className="step-card">
+                <div className="step-number">{s.n}</div>
+                <h3 className="step-title">{s.title}</h3>
+                <p className="step-desc">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
-
-export default Home;
